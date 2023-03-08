@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(poggers VERSION 0.1.0 LANGUAGES CXX CUDA)
 
 
+# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 ###################################################################################################
 # - build type ------------------------------------------------------------------------------------
