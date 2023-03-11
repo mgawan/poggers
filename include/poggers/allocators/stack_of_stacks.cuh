@@ -2,8 +2,8 @@
 #define STACK_OF_STACKS
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>

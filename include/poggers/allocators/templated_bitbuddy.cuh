@@ -2,8 +2,8 @@
 #define POGGERS_TEMPLATE_BITBUDDY
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -18,7 +18,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 
 namespace cg = cooperative_groups;
@@ -71,9 +71,9 @@ struct templated_bitbuddy{
 
 		my_type * dev_version;
 
-		cudaMalloc((void **)& dev_version, sizeof(my_type));
+		hipMalloc((void **)& dev_version, sizeof(my_type));
 
-		cudaMemset(dev_version, ~0U, sizeof(my_type));
+		hipMemset(dev_version, ~0U, sizeof(my_type));
 
 		return dev_version;
 
@@ -84,7 +84,7 @@ struct templated_bitbuddy{
 	static __host__ void free_on_device(my_type * dev_version){
 
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
 	}
 
@@ -373,9 +373,9 @@ struct  templated_bitbuddy<0, size_in_bytes> {
 
 		my_type * dev_version;
 
-		cudaMalloc((void **)& dev_version, sizeof(my_type));
+		hipMalloc((void **)& dev_version, sizeof(my_type));
 
-		cudaMemset(dev_version, ~0U, sizeof(my_type));
+		hipMemset(dev_version, ~0U, sizeof(my_type));
 
 		return dev_version;
 
@@ -386,7 +386,7 @@ struct  templated_bitbuddy<0, size_in_bytes> {
 	static __host__ void free_on_device(my_type * dev_version){
 
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
 	}
 
@@ -457,11 +457,11 @@ struct bitbuddy_allocator {
 			assert(1==0);
 		}
 
-		cudaMalloc((void **)&ext_memory, num_allocations*size_of_allocation);
+		hipMalloc((void **)&ext_memory, num_allocations*size_of_allocation);
 
 		if (ext_memory == nullptr){
 
-			cudaFree(host_version.internal_allocator);
+			hipFree(host_version.internal_allocator);
 
 			printf("Allocator could not get enough memory to handle requested # allocations.\n");
 			assert(1==0);
@@ -472,9 +472,9 @@ struct bitbuddy_allocator {
 		my_type * dev_version;
 
 		//my type is 16 bytes. I'm gonna conservatively estimate that this will always go through.
-		cudaMalloc((void **)&dev_version, sizeof(my_type));
+		hipMalloc((void **)&dev_version, sizeof(my_type));
 
-		cudaMemcpy(dev_version, &host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_version, &host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
 		return dev_version;
 
@@ -485,11 +485,11 @@ struct bitbuddy_allocator {
 
 		my_type host_version;
 
-		cudaMemcpy(&host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(&host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
-		cudaFree(host_version.memory);
+		hipFree(host_version.memory);
 
 		bitbuddy_type::free_on_device(host_version.internal_allocator);
 

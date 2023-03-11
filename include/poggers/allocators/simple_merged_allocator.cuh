@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef POGGERS_BITBUDDY
 #define POGGERS_BITBUDDY
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -22,7 +23,7 @@
 #include <vector>
 #include <chrono>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 
 namespace cg = cooperative_groups;
@@ -224,23 +225,23 @@ namespace allocators {
 
 			storage_bitmap * bitmaps;
 
-			cudaMalloc((void **)&bitmaps, num_sms*sizeof(storage_bitmap));
+			hipMalloc((void **)&bitmaps, num_sms*sizeof(storage_bitmap));
 
 			host_version.storages = bitmaps;
 
 
 			my_type * dev_version;
-			cudaMalloc((void **)&dev_version, sizeof(my_type));
+			hipMalloc((void **)&dev_version, sizeof(my_type));
 
-			cudaMemcpy(dev_version, &host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+			hipMemcpy(dev_version, &host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 			//launch kernel to initialize
 
 			init_simple_allocator<my_type><<<1,1024>>>(dev_version, num_sms);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 
 			auto dev_end = std::chrono::high_resolution_clock::now();
@@ -263,15 +264,15 @@ namespace allocators {
 
 			my_type host_version;
 
-			cudaMemcpy(&host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+			hipMemcpy(&host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
-			cudaFree(host_version.storages);
+			hipFree(host_version.storages);
 
 			bitbuddy_type::free_on_device(host_version.my_bitbuddy);
 
-			cudaFree(dev_version);
+			hipFree(dev_version);
 		}
 
 
@@ -426,23 +427,23 @@ namespace allocators {
 
 			storage_bitmap * bitmaps;
 
-			cudaMalloc((void **)&bitmaps, num_sms*sizeof(storage_bitmap));
+			hipMalloc((void **)&bitmaps, num_sms*sizeof(storage_bitmap));
 
 			host_version.storages = bitmaps;
 
 
 			my_type * dev_version;
-			cudaMalloc((void **)&dev_version, sizeof(my_type));
+			hipMalloc((void **)&dev_version, sizeof(my_type));
 
-			cudaMemcpy(dev_version, &host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+			hipMemcpy(dev_version, &host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 			//launch kernel to initialize
 
 			init_simple_allocator<my_type><<<1,1024>>>(dev_version, num_sms);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 
 			auto dev_end = std::chrono::high_resolution_clock::now();
@@ -465,15 +466,15 @@ namespace allocators {
 
 			my_type host_version;
 
-			cudaMemcpy(&host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+			hipMemcpy(&host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
-			cudaFree(host_version.storages);
+			hipFree(host_version.storages);
 
 			bitbuddy_type::free_on_device(host_version.my_bitbuddy);
 
-			cudaFree(dev_version);
+			hipFree(dev_version);
 		}
 
 

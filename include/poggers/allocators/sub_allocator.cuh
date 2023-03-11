@@ -2,8 +2,8 @@
 #define SUB_ALLOCATOR
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/allocators/aligned_stack.cuh>

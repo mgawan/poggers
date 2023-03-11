@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef GLOBAL_HEAP
 #define GLOBAL_HEAP
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <variant>
 
 #include <stdio.h>
@@ -279,7 +280,7 @@ struct header{
 
 		void * allocation;
 
-		cudaMalloc((void **)&allocation, num_bytes);
+		hipMalloc((void **)&allocation, num_bytes);
 
 		init_heap_kernel<header><<<1,1>>>(allocation, num_bytes);
 
@@ -291,7 +292,7 @@ struct header{
 
 		void * allocation = (void *) heap;
 
-		cudaFree(allocation);
+		hipFree(allocation);
 
 	}
 
@@ -1550,7 +1551,7 @@ struct header{
 
 // 			void * byte_space;
 
-// 			cudaMalloc((void **)&byte_space, num_bytes);
+// 			hipMalloc((void **)&byte_space, num_bytes);
 
 			
 
@@ -1562,7 +1563,7 @@ struct header{
 
 // 			global_heap * dev_heap;
 
-// 			cudaMemcpy(dev_heap, &host_heap, sizeof(global_heap), cudaMemcpyHostToDevice);
+// 			hipMemcpy(dev_heap, &host_heap, sizeof(global_heap), hipMemcpyHostToDevice);
 
 // 		}
 
@@ -1571,7 +1572,7 @@ struct header{
 
 // 			global_heap host_heap;
 
-// 			cudaMemcpy(&host_heap, dev_heap, sizeof(global_heap), cudaMemcpyDeviceToHost);
+// 			hipMemcpy(&host_heap, dev_heap, sizeof(global_heap), hipMemcpyDeviceToHost);
 
 // 			base_heap_ptr::free_on_device(host_heap.free_list);
 

@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef VEB_TREE
 #define VEB_TREE
 //A CUDA implementation of the Van Emde Boas tree, made by Hunter McCoy (hunter@cs.utah.edu)
@@ -23,8 +24,8 @@
 #include <cstdio>
 #include <cmath>
 #include <cassert>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <iostream>
 #include <poggers/allocators/alloc_utils.cuh>
 #include <poggers/hash_schemes/murmurhash.cuh>
@@ -35,10 +36,10 @@ template <typename T>
 void check(T err, const char* const func, const char* const file,
            const int line)
 {
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
         std::cerr << "CUDA Runtime Error at: " << line  << ":" << std::endl << file  << std::endl;
-        std::cerr << cudaGetErrorString(err) << " " << func << std::endl;
+        std::cerr << hipGetErrorString(err) << " " << func << std::endl;
         // We don't exit when we encounter CUDA errors in this example.
         std::exit(EXIT_FAILURE);
     }
@@ -66,7 +67,7 @@ namespace allocators {
 #define SET_BIT_MASK(index) ((1ULL << index))
 
 
-//cudaMemset is being weird
+//hipMemset is being weird
 __global__ void init_bits(uint64_t * bits, uint64_t items_in_universe){
 
 	uint64_t tid = threadIdx.x +blockIdx.x*blockDim.x;
@@ -129,19 +130,19 @@ struct layer{
 		layer * host_layer;
 
 
-		cudaMallocHost((void **)&host_layer, sizeof(layer));
+		hipHostMalloc((void **)&host_layer, sizeof(layer));
 
 		uint64_t * dev_bits;
 
-		cudaMalloc((void **)&dev_bits, sizeof(uint64_t)*ext_num_blocks);
+		hipMalloc((void **)&dev_bits, sizeof(uint64_t)*ext_num_blocks);
 
 
-		cudaMemset(dev_bits, 0, sizeof(uint64_t)*ext_num_blocks);
+		hipMemset(dev_bits, 0, sizeof(uint64_t)*ext_num_blocks);
 
 
 		init_bits<<<(items_in_universe-1)/256+1, 256>>>(dev_bits, items_in_universe);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_layer->universe_size = items_in_universe;
 
@@ -152,16 +153,16 @@ struct layer{
 
 		layer * dev_layer;
 
-		cudaMalloc((void **)&dev_layer, sizeof(layer));
+		hipMalloc((void **)&dev_layer, sizeof(layer));
 
-		cudaMemcpy(dev_layer, host_layer, sizeof(layer), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_layer, host_layer, sizeof(layer), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 
-		cudaFreeHost(host_layer);
+		hipHostFree(host_layer);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		return dev_layer;
 
@@ -174,15 +175,15 @@ struct layer{
 
 		layer * host_layer;
 
-		cudaMallocHost((void **)&host_layer, sizeof(layer));
+		hipHostMalloc((void **)&host_layer, sizeof(layer));
 
-		cudaMemcpy(host_layer, dev_layer, sizeof(layer), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_layer, dev_layer, sizeof(layer), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFree(host_layer->bits);
+		hipFree(host_layer->bits);
 
-		cudaFreeHost(host_layer);
+		hipHostFree(host_layer);
 
 	}
 
@@ -273,7 +274,7 @@ struct veb_tree {
 
 		veb_tree * host_tree;
 
-		cudaMallocHost((void **)&host_tree, sizeof(veb_tree));
+		hipHostMalloc((void **)&host_tree, sizeof(veb_tree));
 
 
 		int max_height = 64 - __builtin_clzll(universe);
@@ -285,7 +286,7 @@ struct veb_tree {
 
 		layer ** host_layers;
 
-		cudaMallocHost((void **)&host_layers, ext_num_layers*sizeof(layer *));
+		hipHostMalloc((void **)&host_layers, ext_num_layers*sizeof(layer *));
 
 
 		uint64_t ext_universe_size = universe;
@@ -301,13 +302,13 @@ struct veb_tree {
 
 		layer ** dev_layers;
 
-		cudaMalloc((void **)&dev_layers, ext_num_layers*sizeof(layer *));
+		hipMalloc((void **)&dev_layers, ext_num_layers*sizeof(layer *));
 
-		cudaMemcpy(dev_layers, host_layers, ext_num_layers*sizeof(layer *), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_layers, host_layers, ext_num_layers*sizeof(layer *), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_layers);
+		hipHostFree(host_layers);
 
 		//setup host structure
 		host_tree->num_layers = ext_num_layers;
@@ -320,13 +321,13 @@ struct veb_tree {
 
 
 		veb_tree * dev_tree;
-		cudaMalloc((void **)&dev_tree, sizeof(veb_tree));
+		hipMalloc((void **)&dev_tree, sizeof(veb_tree));
 
 
-		cudaMemcpy(dev_tree, host_tree, sizeof(veb_tree), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_tree, host_tree, sizeof(veb_tree), hipMemcpyHostToDevice);
 
 
-		cudaFreeHost(host_tree);
+		hipHostFree(host_tree);
 
 		return dev_tree;
 
@@ -339,11 +340,11 @@ struct veb_tree {
 
 		veb_tree * host_tree;
 
-		cudaMallocHost((void **)&host_tree, sizeof(veb_tree));
+		hipHostMalloc((void **)&host_tree, sizeof(veb_tree));
 
-		cudaMemcpy(host_tree, dev_tree, sizeof(veb_tree), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_tree, dev_tree, sizeof(veb_tree), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		int ext_num_layers = host_tree->num_layers;
 
@@ -351,11 +352,11 @@ struct veb_tree {
 
 		layer ** host_layers;
 
-		cudaMallocHost((void **)&host_layers, ext_num_layers*sizeof(layer *));
+		hipHostMalloc((void **)&host_layers, ext_num_layers*sizeof(layer *));
 
-		cudaMemcpy(host_layers, host_tree->layers, ext_num_layers*sizeof(layer *), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_layers, host_tree->layers, ext_num_layers*sizeof(layer *), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 
 		for (int i = 0; i < ext_num_layers; i++){
@@ -364,14 +365,14 @@ struct veb_tree {
 
 		}
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 
-		cudaFreeHost(host_layers);
+		hipHostFree(host_layers);
 
-		cudaFreeHost(host_tree);
+		hipHostFree(host_tree);
 
-		cudaFree(dev_tree);
+		hipFree(dev_tree);
 
 
 	}
@@ -596,15 +597,15 @@ struct veb_tree {
 
 		veb_tree * host_version;
 
-		cudaMallocHost((void **)&host_version, sizeof(veb_tree));
+		hipHostMalloc((void **)&host_version, sizeof(veb_tree));
 
-		cudaMemcpy(host_version, this, sizeof(veb_tree), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_version, this, sizeof(veb_tree), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		uint64_t ret_value = host_version->total_universe;
 
-		cudaFreeHost(host_version);
+		hipHostFree(host_version);
 
 		return ret_value;
 
@@ -616,13 +617,13 @@ struct veb_tree {
 
 		uint64_t * fill_count;
 
-		cudaMallocManaged((void **)&fill_count, sizeof(uint64_t));
+		hipMallocManaged((void **)&fill_count, sizeof(uint64_t));
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		fill_count[0] = 0;
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		uint64_t max_value = report_max();
 
@@ -630,11 +631,11 @@ struct veb_tree {
 
 		veb_report_fill_kernel<veb_tree><<<(num_threads-1)/512+1, 512>>>(this, num_threads, fill_count);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		uint64_t return_val = fill_count[0];
 
-		cudaFree(fill_count);
+		hipFree(fill_count);
 
 		return return_val;
 

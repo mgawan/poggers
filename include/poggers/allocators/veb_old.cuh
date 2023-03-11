@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #ifndef VEB_TREE
 #define VEB_TREE
 //A CUDA implementation of the Van Emde Boas tree, made by Hunter McCoy (hunter@cs.utah.edu)
@@ -23,8 +24,8 @@
 #include <cstdio>
 #include <cmath>
 #include <cassert>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <iostream>
 #include <poggers/allocators/alloc_utils.cuh>
 
@@ -34,10 +35,10 @@ template <typename T>
 void check(T err, const char* const func, const char* const file,
            const int line)
 {
-    if (err != cudaSuccess)
+    if (err != hipSuccess)
     {
         std::cerr << "CUDA Runtime Error at: " << line  << ":" << std::endl << file  << std::endl;
-        std::cerr << cudaGetErrorString(err) << " " << func << std::endl;
+        std::cerr << hipGetErrorString(err) << " " << func << std::endl;
         // We don't exit when we encounter CUDA errors in this example.
         std::exit(EXIT_FAILURE);
     }
@@ -61,7 +62,7 @@ namespace allocators {
 #define SET_BIT_MASK(index) ((1ULL << index))
 
 
-//cudaMemset is being weird
+//hipMemset is being weird
 __global__ void init_bits(uint64_t * bits, uint64_t num_blocks){
 
 	uint64_t tid = threadIdx.x +blockIdx.x*blockDim.x;
@@ -95,7 +96,7 @@ struct layer{
 	// __host__ __device__ layer(uint64_t universe): universe_size(universe), num_blocks((universe_size-1)/64+1){
 
 
-	// 	//bits = (uint64_t *) cudaMalloc(num_blocks, sizeof(uint64_t));
+	// 	//bits = (uint64_t *) hipMalloc(num_blocks, sizeof(uint64_t));
 
 	// 	//max = (int * ) calloc(num_blocks, sizeof(int));
 
@@ -121,21 +122,21 @@ struct layer{
 
 			uint64_t * dev_bits;
 
-			CHECK_CUDA_ERROR(cudaMalloc((void **)&dev_bits, host_layer.num_blocks*sizeof(uint64_t)));
+			CHECK_CUDA_ERROR(hipMalloc((void **)&dev_bits, host_layer.num_blocks*sizeof(uint64_t)));
 
 
 			init_bits<<<host_layer.num_blocks-1/512+1, 512>>>(dev_bits, host_layer.num_blocks);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 			//does this work? find out on the next episode of dragon ball z.
-			//CHECK_CUDA_ERROR(cudaMemset(bits, 0xff, host_layer.num_blocks*sizeof(uint64_t)));
+			//CHECK_CUDA_ERROR(hipMemset(bits, 0xff, host_layer.num_blocks*sizeof(uint64_t)));
 
 			host_layer.bits = dev_bits;
 
-			CHECK_CUDA_ERROR(cudaMalloc((void **)&dev_layer, sizeof(layer)));
+			CHECK_CUDA_ERROR(hipMalloc((void **)&dev_layer, sizeof(layer)));
 
-			CHECK_CUDA_ERROR(cudaMemcpy(dev_layer, &host_layer, sizeof(layer), cudaMemcpyHostToDevice));
+			CHECK_CUDA_ERROR(hipMemcpy(dev_layer, &host_layer, sizeof(layer), hipMemcpyHostToDevice));
 
 			return dev_layer;
 
@@ -147,11 +148,11 @@ struct layer{
 
 		layer host_layer;
 
-		CHECK_CUDA_ERROR(cudaMemcpy(&host_layer, dev_layer, sizeof(layer), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(&host_layer, dev_layer, sizeof(layer), hipMemcpyDeviceToHost));
 
-		CHECK_CUDA_ERROR(cudaFree(host_layer.bits));
+		CHECK_CUDA_ERROR(hipFree(host_layer.bits));
 
-		CHECK_CUDA_ERROR(cudaFree(dev_layer));
+		CHECK_CUDA_ERROR(hipFree(dev_layer));
 
 		return;
 
@@ -163,7 +164,7 @@ struct layer{
 
 		layer host_layer;
 
-		CHECK_CUDA_ERROR(cudaMemcpy(&host_layer, this, sizeof(layer), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(&host_layer, this, sizeof(layer), hipMemcpyDeviceToHost));
 
 		return host_layer.num_blocks*8+24;
 
@@ -347,9 +348,9 @@ struct veb_tree
 
 		//printf("Using %lu or %lu bytes for layer array\n", ext_num_layers*sizeof(layer *), ext_num_layers*sizeof((layer *)));
 
-		CHECK_CUDA_ERROR(cudaMalloc((void **)& dev_layers, ext_num_layers*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipMalloc((void **)& dev_layers, ext_num_layers*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(dev_layers, layers, ext_num_layers*sizeof(layer *), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(hipMemcpy(dev_layers, layers, ext_num_layers*sizeof(layer *), hipMemcpyHostToDevice));
 
 		free(layers);
 
@@ -358,9 +359,9 @@ struct veb_tree
 
 		layer ** dev_lock_layers;
 
-		CHECK_CUDA_ERROR(cudaMalloc((void **)& dev_lock_layers, (ext_num_layers-1)*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipMalloc((void **)& dev_lock_layers, (ext_num_layers-1)*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(dev_lock_layers, lock_layers, (ext_num_layers-1)*sizeof(layer *), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(hipMemcpy(dev_lock_layers, lock_layers, (ext_num_layers-1)*sizeof(layer *), hipMemcpyHostToDevice));
 
 
 		host_tree.lock_layers = dev_lock_layers;
@@ -369,9 +370,9 @@ struct veb_tree
 
 		veb_tree * dev_tree;
 
-		CHECK_CUDA_ERROR(cudaMalloc((void **)&dev_tree, sizeof(veb_tree)));
+		CHECK_CUDA_ERROR(hipMalloc((void **)&dev_tree, sizeof(veb_tree)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(dev_tree, &host_tree, sizeof(veb_tree), cudaMemcpyHostToDevice));
+		CHECK_CUDA_ERROR(hipMemcpy(dev_tree, &host_tree, sizeof(veb_tree), hipMemcpyHostToDevice));
 
 
 		return dev_tree;
@@ -385,20 +386,20 @@ struct veb_tree
 
 		veb_tree * host_tree = (veb_tree *) malloc(sizeof(veb_tree));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(host_tree, dev_tree, sizeof(veb_tree), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(host_tree, dev_tree, sizeof(veb_tree), hipMemcpyDeviceToHost));
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		int num_layers = host_tree->num_layers;
 
 		layer ** host_layers;
 
-		CHECK_CUDA_ERROR(cudaMallocHost((void **)&host_layers, num_layers*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipHostMalloc((void **)&host_layers, num_layers*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(host_layers, host_tree->layers, num_layers*sizeof(layer *), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(host_layers, host_tree->layers, num_layers*sizeof(layer *), hipMemcpyDeviceToHost));
 
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		for (int i=0; i < num_layers; i++){
 
@@ -409,12 +410,12 @@ struct veb_tree
 
 		layer ** host_lock_layers;
 
-		CHECK_CUDA_ERROR(cudaMallocHost((void **)&host_lock_layers, (num_layers-1)*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipHostMalloc((void **)&host_lock_layers, (num_layers-1)*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(host_lock_layers, host_tree->lock_layers, (num_layers-1)*sizeof(layer *), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(host_lock_layers, host_tree->lock_layers, (num_layers-1)*sizeof(layer *), hipMemcpyDeviceToHost));
 
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		for (int i=0; i < num_layers-1; i++){
 
@@ -423,13 +424,13 @@ struct veb_tree
 		}
 
 
-		cudaFreeHost(host_layers);
+		hipHostFree(host_layers);
 
-		cudaFreeHost(host_lock_layers);
+		hipHostFree(host_lock_layers);
 
 		free(host_tree);
 
-		cudaFree(dev_tree);
+		hipFree(dev_tree);
 
 	}
 
@@ -438,9 +439,9 @@ struct veb_tree
 
 		veb_tree host_tree;
 
-		CHECK_CUDA_ERROR(cudaMemcpy(&host_tree, this, sizeof(veb_tree), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(&host_tree, this, sizeof(veb_tree), hipMemcpyDeviceToHost));
 
-		CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+		CHECK_CUDA_ERROR(hipDeviceSynchronize());
 
 
 
@@ -451,36 +452,36 @@ struct veb_tree
 
 		layer ** host_layers;
 
-		CHECK_CUDA_ERROR(cudaMallocHost((void **)&host_layers, host_tree.num_layers*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipHostMalloc((void **)&host_layers, host_tree.num_layers*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(host_layers, host_tree.layers, host_tree.num_layers*sizeof(layer *), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(host_layers, host_tree.layers, host_tree.num_layers*sizeof(layer *), hipMemcpyDeviceToHost));
 
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		for (int i = 0; i < host_tree.num_layers; i++){
 
 			space += host_layers[i]->space_in_bytes();
 		}
 
-		cudaFreeHost(host_layers);
+		hipHostFree(host_layers);
 
 
 		layer ** host_lock_layers;
 
-		CHECK_CUDA_ERROR(cudaMallocHost((void **)&host_lock_layers, (host_tree.num_layers-1)*sizeof(layer *)));
+		CHECK_CUDA_ERROR(hipHostMalloc((void **)&host_lock_layers, (host_tree.num_layers-1)*sizeof(layer *)));
 
-		CHECK_CUDA_ERROR(cudaMemcpy(host_lock_layers, host_tree.lock_layers, (host_tree.num_layers-1)*sizeof(layer *), cudaMemcpyDeviceToHost));
+		CHECK_CUDA_ERROR(hipMemcpy(host_lock_layers, host_tree.lock_layers, (host_tree.num_layers-1)*sizeof(layer *), hipMemcpyDeviceToHost));
 
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		for (int i = 0; i < host_tree.num_layers-1; i++){
 
 			space += host_lock_layers[i]->space_in_bytes();
 		}
 
-		cudaFreeHost(host_lock_layers);
+		hipHostFree(host_lock_layers);
 
 		return space;
 

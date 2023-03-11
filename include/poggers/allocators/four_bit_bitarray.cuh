@@ -2,8 +2,8 @@
 #define POGGERS_FOUR_BITARRAY
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -16,7 +16,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 
 //STATES of the new scheme

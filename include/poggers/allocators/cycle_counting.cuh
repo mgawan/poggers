@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef CYCLE_COUNTING
 #define CYCLE_COUNTING
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 
 #include "stdio.h"

@@ -2,14 +2,14 @@
 #define HELPERS_H
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 
 #include <assert.h>
 
 //thrust stuff
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 #include <cooperative_groups/memcpy_async.h>
 
 namespace cg = cooperative_groups;

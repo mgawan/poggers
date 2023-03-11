@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef SLAB_ONE_SIZE
 #define SLAB_ONE_SIZE
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/offset_slab.cuh>
 #include <poggers/allocators/one_size_allocator.cuh>
@@ -11,7 +12,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 //These need to be enabled for bitarrays
 #include <cooperative_groups/reduce.h>
@@ -86,7 +87,7 @@ struct one_size_slab_allocator {
 
 	my_type * host_version;
 
-	cudaMallocHost((void **)&host_version, sizeof(my_type));
+	hipHostMalloc((void **)&host_version, sizeof(my_type));
 
 	host_version->offset_size = ext_size;
 
@@ -97,7 +98,7 @@ struct one_size_slab_allocator {
     //host_version->mem_allocator = one_size_allocator::generate_on_device(num_pinned_blocks, 4096*ext_size, 1324);
 
 	char * host_ptr_ext_mem;
-	cudaMalloc((void **)&host_ptr_ext_mem, num_pinned_blocks*ext_size*4096);
+	hipMalloc((void **)&host_ptr_ext_mem, num_pinned_blocks*ext_size*4096);
 
 	if (host_ptr_ext_mem == nullptr){
 		throw std::runtime_error("main malloc buffer failed to be acquired.\n");
@@ -114,9 +115,9 @@ struct one_size_slab_allocator {
 	
  	uint64_t * debug_array_ptr;
 
- 	cudaMalloc((void **)&debug_array_ptr, sizeof(uint64_t)*num_pinned_blocks);
+ 	hipMalloc((void **)&debug_array_ptr, sizeof(uint64_t)*num_pinned_blocks);
 
- 	cudaMemset(debug_array_ptr, 0, sizeof(uint64_t)*num_pinned_blocks);
+ 	hipMemset(debug_array_ptr, 0, sizeof(uint64_t)*num_pinned_blocks);
 
  	host_version->debug_array = debug_array_ptr;
 
@@ -126,13 +127,13 @@ struct one_size_slab_allocator {
 
  	my_type * dev_version;
 
- 	cudaMalloc((void **)&dev_version, sizeof(my_type));
+ 	hipMalloc((void **)&dev_version, sizeof(my_type));
 
- 	cudaMemcpy(dev_version, host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+ 	hipMemcpy(dev_version, host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
- 	cudaFreeHost(host_version);
+ 	hipHostFree(host_version);
 
- 	cudaDeviceSynchronize();
+ 	hipDeviceSynchronize();
 
  	return dev_version;
 
@@ -143,16 +144,16 @@ struct one_size_slab_allocator {
 	static __host__ void free_on_device(my_type * dev_version){
 
 		my_type * host_version;
-		cudaMallocHost((void **)&host_version, sizeof(my_type));
+		hipHostMalloc((void **)&host_version, sizeof(my_type));
 
-		cudaMemcpy(host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		one_size_allocator::free_on_device(host_version->block_allocator);
 		//one_size_allocator::free_on_device(host_version->mem_allocator);
 
-		cudaFree(host_version->extra_memory);
+		hipFree(host_version->extra_memory);
 
 		smid_pinned_container<extra_blocks>::free_on_device(host_version->malloc_containers);
 
@@ -161,13 +162,13 @@ struct one_size_slab_allocator {
 
 		#if SLAB_DEBUG_ARRAY
 
-			cudaFree(host_version->debug_array);
+			hipFree(host_version->debug_array);
 
 		#endif
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
-		cudaFreeHost(host_version);
+		hipHostFree(host_version);
 
 		return;
 
@@ -559,7 +560,7 @@ struct one_size_slab_allocator {
 
 		check_block_kernel<my_type><<<(num_blocks-1)/512+1,512>>>(num_blocks);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 
 	}
@@ -606,19 +607,19 @@ struct one_size_slab_allocator {
 
 		my_type * host_full_alloc;
 
-		cudaMallocHost((void **)&host_full_alloc, sizeof(my_type));
+		hipHostMalloc((void **)&host_full_alloc, sizeof(my_type));
 
-		cudaMemcpy(host_full_alloc, this, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_full_alloc, this, sizeof(my_type), hipMemcpyDeviceToHost);
 
 		one_size_allocator * host_block_allocator;
 
-		cudaMallocHost((void **)&host_block_allocator, sizeof(one_size_allocator));
+		hipHostMalloc((void **)&host_block_allocator, sizeof(one_size_allocator));
 
-		cudaMemcpy(host_block_allocator, host_full_alloc->block_allocator, sizeof(one_size_allocator), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_block_allocator, host_full_alloc->block_allocator, sizeof(one_size_allocator), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_full_alloc);
+		hipHostFree(host_full_alloc);
 
 		return host_block_allocator;
 
@@ -633,7 +634,7 @@ struct one_size_slab_allocator {
 
 		uint64_t fill = host_block_allocator->report_fill();
 
-		cudaFreeHost(host_block_allocator);
+		hipHostFree(host_block_allocator);
 
 		return fill;
 
@@ -647,7 +648,7 @@ struct one_size_slab_allocator {
 
 		uint64_t max_fill = host_block_allocator->report_max();
 
-		cudaFreeHost(host_block_allocator);
+		hipHostFree(host_block_allocator);
 
 		return max_fill;
 

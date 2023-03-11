@@ -23,8 +23,8 @@
 #include <cstdio>
 #include <cmath>
 #include <cassert>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <iostream>
 #include <poggers/allocators/veb.cuh>
 
@@ -54,18 +54,18 @@ struct one_size_allocator{
 		one_size_allocator * host_alloc;
 
 
-		cudaMallocHost((void **)&host_alloc, sizeof(one_size_allocator));
+		hipHostMalloc((void **)&host_alloc, sizeof(one_size_allocator));
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_alloc->internal_tree = veb_tree::generate_on_device(universe, seed);
 		void * dev_allocation;
 
-		cudaMalloc((void **)&dev_allocation, ext_size_per_alloc*universe);
+		hipMalloc((void **)&dev_allocation, ext_size_per_alloc*universe);
 
-		cudaMemset(dev_allocation, 0, ext_size_per_alloc*universe);
+		hipMemset(dev_allocation, 0, ext_size_per_alloc*universe);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_alloc->allocation = dev_allocation;
 
@@ -73,12 +73,12 @@ struct one_size_allocator{
 
 		one_size_allocator * dev_allocator;
 
-		cudaMalloc((void ** )&dev_allocator, sizeof(one_size_allocator));
+		hipMalloc((void ** )&dev_allocator, sizeof(one_size_allocator));
 
-		cudaMemcpy(dev_allocator, host_alloc, sizeof(one_size_allocator), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_allocator, host_alloc, sizeof(one_size_allocator), hipMemcpyHostToDevice);
 
 
-		cudaFreeHost(host_alloc);
+		hipHostFree(host_alloc);
 
 		return dev_allocator;
 
@@ -90,21 +90,21 @@ struct one_size_allocator{
 		one_size_allocator * host_alloc;
 
 
-		cudaMallocHost((void **)&host_alloc, sizeof(one_size_allocator));
+		hipHostMalloc((void **)&host_alloc, sizeof(one_size_allocator));
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaMemcpy(host_alloc, dev_version, sizeof(one_size_allocator), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_alloc, dev_version, sizeof(one_size_allocator), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFree(host_alloc->allocation);
+		hipFree(host_alloc->allocation);
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
 		veb_tree::free_on_device(host_alloc->internal_tree);
 
-		cudaFreeHost(host_alloc);
+		hipHostFree(host_alloc);
 
 
 	}
@@ -184,11 +184,11 @@ struct one_size_allocator{
 
 	// 	veb_tree * host_internal_tree;
 
-	// 	cudaMallocHost((void **)&host_internal_tree, sizeof(veb_tree));
+	// 	hipHostMalloc((void **)&host_internal_tree, sizeof(veb_tree));
 
-	// 	cudaMemcpy(host_internal_tree, internal_tree, sizeof(veb_tree), cudaMemcpyDeviceToHost);
+	// 	hipMemcpy(host_internal_tree, internal_tree, sizeof(veb_tree), hipMemcpyDeviceToHost);
 
-	// 	cudaDeviceSynchronize();
+	// 	hipDeviceSynchronize();
 
 	// 	return host_internal_tree;
 
@@ -206,7 +206,7 @@ struct one_size_allocator{
 
 		uint64_t internal_fill = internal_tree->report_fill();
 
-		//cudaFreeHost(host_internal_tree);
+		//hipHostFree(host_internal_tree);
 
 		return internal_fill;
 

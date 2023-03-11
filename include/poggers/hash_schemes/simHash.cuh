@@ -2,8 +2,8 @@
 #define SIMPLE_TABLE_H
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include "include/metadata.cuh"
 #include "include/ht_helpers.cuh"
 //#include "include/key_val_pair.cuh"
@@ -22,7 +22,7 @@
 
 #include "include/key_val_pair.cuh"
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 #include <cooperative_groups/memcpy_async.h>
 
 namespace cg = cooperative_groups;
@@ -849,17 +849,17 @@ __host__ void free_ht(static_size_iceberg_table<Key, Val, Primary_bucket_size, S
 	static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard> * host_vqf;
 
 
-	cudaMallocHost((void **)& host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
+	hipHostMalloc((void **)& host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
 
-	cudaMemcpy(host_vqf, vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>), cudaMemcpyDeviceToHost);
+	hipMemcpy(host_vqf, vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>), hipMemcpyDeviceToHost);
 
-	cudaFree(vqf);
+	hipFree(vqf);
 
-	cudaFree(host_vqf->primary_items);
+	hipFree(host_vqf->primary_items);
 
-	cudaFree(host_vqf->secondary_items);
+	hipFree(host_vqf->secondary_items);
 
-	cudaFreeHost(host_vqf);
+	hipHostFree(host_vqf);
 
 
 
@@ -874,7 +874,7 @@ __host__ static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_buck
 
 	static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard> * host_vqf;
 
-	cudaMallocHost((void **)&host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
+	hipHostMalloc((void **)&host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
 
 	const int primary_bucket_size_int = Primary_bucket_size;
 	const int secondary_bucket_size_int = Secondary_bucket_size;
@@ -889,9 +889,9 @@ __host__ static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_buck
 	//im guestimating 10% of the size of the main?
 	uint64_t secondary_nitems = ((nitems-1)/primary_bucket_size_int +1)*secondary_bucket_size_int;
 
-	cudaMalloc((void **)&primary_items, primary_nitems*sizeof(key_val_pair<Key, Val>));
+	hipMalloc((void **)&primary_items, primary_nitems*sizeof(key_val_pair<Key, Val>));
 
-	cudaMalloc((void **)&secondary_items, secondary_nitems*sizeof(key_val_pair<Key, Val>));
+	hipMalloc((void **)&secondary_items, secondary_nitems*sizeof(key_val_pair<Key, Val>));
 
 	host_vqf->primary_items = primary_items;
 
@@ -907,11 +907,11 @@ __host__ static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_buck
 	static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard> * dev_vqf;
 
 
-	cudaMalloc((void **)& dev_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
+	hipMalloc((void **)& dev_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>));
 
-	cudaMemcpy(dev_vqf, host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>), cudaMemcpyHostToDevice);
+	hipMemcpy(dev_vqf, host_vqf, sizeof(static_size_iceberg_table<Key, Val, Primary_bucket_size, Secondary_bucket_size, Partition_size, Has_backyard>), hipMemcpyHostToDevice);
 
-	cudaFreeHost(host_vqf);
+	hipHostFree(host_vqf);
 
 
 

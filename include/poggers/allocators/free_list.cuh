@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef FREE_LIST
 #define FREE_LIST
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <variant>
 
 #include <stdio.h>
@@ -311,7 +312,7 @@ struct header {
 
 		void * allocation;
 
-		cudaMalloc((void **)&allocation, num_bytes);
+		hipMalloc((void **)&allocation, num_bytes);
 
 		init_heap_kernel<header><<<1,1>>>(allocation, num_bytes);
 
@@ -323,7 +324,7 @@ struct header {
 
 		void * allocation;
 
-		cudaMallocManaged((void **)&allocation, num_bytes);
+		hipMallocManaged((void **)&allocation, num_bytes);
 
 		init_heap_kernel<header><<<1,1>>>(allocation, num_bytes);
 
@@ -335,7 +336,7 @@ struct header {
 
 		void * allocation = (void *) heap;
 
-		cudaFree(allocation);
+		hipFree(allocation);
 
 	}
 
@@ -1655,18 +1656,18 @@ struct header {
 	__host__ void * host_malloc_aligned(uint64_t bytes_requested, uint64_t alignment, int offset){
 
 		void ** temp_write_space;
-		cudaMallocManaged(&temp_write_space, sizeof(void *));
+		hipMallocManaged(&temp_write_space, sizeof(void *));
 
 		if (temp_write_space == nullptr){
-			printf("No space for cudaMalloc\n");
+			printf("No space for hipMalloc\n");
 			abort();
 		}
 
 		host_malloc_aligned_kernel<header><<<1,1>>>(this, temp_write_space, bytes_requested, alignment, offset);
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		void * final_address = temp_write_space[0];
-		cudaFree(temp_write_space);
+		hipFree(temp_write_space);
 
 		return final_address;
 

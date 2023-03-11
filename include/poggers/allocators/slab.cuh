@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef POGGERS_BIT_SLAB
 #define POGGERS_BIT_SLAB
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -18,7 +19,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 //These need to be enabled for bitarrays
 #include <cooperative_groups/reduce.h>

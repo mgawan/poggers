@@ -2,12 +2,12 @@
 #define GROUPED_POWER_BUCKETS
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <stdio.h>
 #include <assert.h>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 #include <iostream>
 
@@ -124,16 +124,16 @@ public:
 		//printf("Using %llu bytes, %llu bytes per item, %llu per bucket\n", min_cache_lines*sizeof(rep_type), 1.0*min_cache_lines*sizeof(rep_type)/(ext_nslots), sizeof(int_rep_type));
 
 
-		cudaMalloc((void **)& ext_slots, min_cache_lines*sizeof(rep_type));
-		cudaMemset(ext_slots, 0, min_cache_lines*sizeof(rep_type));
+		hipMalloc((void **)& ext_slots, min_cache_lines*sizeof(rep_type));
+		hipMemset(ext_slots, 0, min_cache_lines*sizeof(rep_type));
 
 		my_type host_version (ext_slots, min_buckets, ext_seed);
 
 		my_type * dev_version;
 
-		cudaMalloc((void **)&dev_version, sizeof(my_type));
+		hipMalloc((void **)&dev_version, sizeof(my_type));
 
-		cudaMemcpy(dev_version, &host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_version, &host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
 		return dev_version;
 
@@ -146,11 +146,11 @@ public:
 
 		my_type host_version;
 
-		cudaMemcpy(&host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(&host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaFree(host_version.slots);
+		hipFree(host_version.slots);
 
-		cudaFree(dev_version);
+		hipFree(dev_version);
 
 		return;
 

@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef POGGERS_BIT_SLAB
 #define POGGERS_BIT_SLAB
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -18,7 +19,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 //These need to be enabled for bitarrays
 #include <cooperative_groups/reduce.h>
@@ -1261,7 +1262,7 @@ struct pinned_storage {
 
 		pinned_storage * host_storage;
 
-		cudaMallocHost((void **)&host_storage, sizeof(pinned_storage));
+		hipHostMalloc((void **)&host_storage, sizeof(pinned_storage));
 
 		offset_storage_bitmap * dev_storages;
 
@@ -1269,23 +1270,23 @@ struct pinned_storage {
 		int num_storages = poggers::utils::get_num_streaming_multiprocessors(device);
 
 		printf("Booting up %d storages, %llu bytes\n", num_storages, sizeof(offset_storage_bitmap)*num_storages);
-		cudaMalloc((void **)&dev_storages, sizeof(offset_storage_bitmap)*num_storages);
+		hipMalloc((void **)&dev_storages, sizeof(offset_storage_bitmap)*num_storages);
 
 		init_storage<<<(num_storages-1)/256+1,256>>>(dev_storages, num_storages);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_storage->storages = dev_storages;
 
 		pinned_storage * dev_ptr;
 
-		cudaMalloc((void **)&dev_ptr, sizeof(pinned_storage));
+		hipMalloc((void **)&dev_ptr, sizeof(pinned_storage));
 
-		cudaMemcpy(dev_ptr, host_storage, sizeof(pinned_storage), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_ptr, host_storage, sizeof(pinned_storage), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_storage);
+		hipHostFree(host_storage);
 
 		return dev_ptr;
 
@@ -1303,17 +1304,17 @@ struct pinned_storage {
 
 		pinned_storage * host_storage;
 
-		cudaMallocHost((void **)&host_storage, sizeof(pinned_storage));
+		hipHostMalloc((void **)&host_storage, sizeof(pinned_storage));
 
-		cudaMemcpy(host_storage, dev_storage, sizeof(pinned_storage), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_storage, dev_storage, sizeof(pinned_storage), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFree(dev_storage);
+		hipFree(dev_storage);
 
-		cudaFree(host_storage->storages);
+		hipFree(host_storage->storages);
 
-		cudaFreeHost(host_storage);
+		hipHostFree(host_storage);
 
 		return;
 
@@ -1777,7 +1778,7 @@ struct smid_pinned_container {
 
 		my_type * host_storage;
 
-		cudaMallocHost((void **)&host_storage, sizeof(my_type));
+		hipHostMalloc((void **)&host_storage, sizeof(my_type));
 
 		pinned_type * dev_storages;
 
@@ -1785,23 +1786,23 @@ struct smid_pinned_container {
 		int num_storages = poggers::utils::get_num_streaming_multiprocessors(device);
 
 		printf("Booting up %d storages, %llu bytes\n", num_storages, sizeof(pinned_type)*num_storages);
-		cudaMalloc((void **)&dev_storages, sizeof(pinned_type)*num_storages);
+		hipMalloc((void **)&dev_storages, sizeof(pinned_type)*num_storages);
 
 		smid_pinned_block_init_storage<num_blocks, block_allocator, memory_allocator><<<(num_storages-1)/256+1,256>>>(balloc, memalloc, dev_storages, num_storages);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_storage->storages = dev_storages;
 
 		my_type * dev_ptr;
 
-		cudaMalloc((void **)&dev_ptr, sizeof(my_type));
+		hipMalloc((void **)&dev_ptr, sizeof(my_type));
 
-		cudaMemcpy(dev_ptr, host_storage, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_ptr, host_storage, sizeof(my_type), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_storage);
+		hipHostFree(host_storage);
 
 		return dev_ptr;
 
@@ -1821,7 +1822,7 @@ struct smid_pinned_container {
 
 		my_type * host_storage;
 
-		cudaMallocHost((void **)&host_storage, sizeof(my_type));
+		hipHostMalloc((void **)&host_storage, sizeof(my_type));
 
 		pinned_type * dev_storages;
 
@@ -1829,23 +1830,23 @@ struct smid_pinned_container {
 		int num_storages = poggers::utils::get_num_streaming_multiprocessors(device);
 
 		printf("Booting up %d storages, %llu bytes\n", num_storages, sizeof(pinned_type)*num_storages);
-		cudaMalloc((void **)&dev_storages, sizeof(pinned_type)*num_storages);
+		hipMalloc((void **)&dev_storages, sizeof(pinned_type)*num_storages);
 
 		smid_pinned_block_init_storage_char<num_blocks, block_allocator><<<(num_storages-1)/256+1,256>>>(balloc, ext_offset, dev_storages, num_storages);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		host_storage->storages = dev_storages;
 
 		my_type * dev_ptr;
 
-		cudaMalloc((void **)&dev_ptr, sizeof(my_type));
+		hipMalloc((void **)&dev_ptr, sizeof(my_type));
 
-		cudaMemcpy(dev_ptr, host_storage, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_ptr, host_storage, sizeof(my_type), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_storage);
+		hipHostFree(host_storage);
 
 		return dev_ptr;
 
@@ -1864,17 +1865,17 @@ struct smid_pinned_container {
 
 		my_type * host_storage;
 
-		cudaMallocHost((void **)&host_storage, sizeof(my_type));
+		hipHostMalloc((void **)&host_storage, sizeof(my_type));
 
-		cudaMemcpy(host_storage, dev_storage, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_storage, dev_storage, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFree(dev_storage);
+		hipFree(dev_storage);
 
-		cudaFree(host_storage->storages);
+		hipFree(host_storage->storages);
 
-		cudaFreeHost(host_storage);
+		hipHostFree(host_storage);
 
 		return;
 

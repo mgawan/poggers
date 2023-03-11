@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef CONST_HEAP_POINTER
 #define CONST_HEAP_POINTER
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include "stdio.h"
 #include "assert.h"
@@ -374,7 +375,7 @@ struct const_heap_pointer {
 
 
 			init_block_helper_kernel<my_type><<<1,1>>>(ext_memory_ptr);
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 			return (my_type *) ext_memory_ptr;
 

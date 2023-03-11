@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef BITARRAY
 #define BITARRAY
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -15,7 +16,7 @@
 #include "stdio.h"
 #include "assert.h"
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 
 namespace cg = cooperative_groups;
@@ -348,8 +349,8 @@ struct storage_bitmap {
 
 	static __host__ my_type * generate_buffers(){
 
-	cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
+	hipDeviceProp_t prop;
+    hipGetDeviceProperties(&prop, 0);
 
     int maximum_sm = prop.multiProcessorCount;
 
@@ -357,7 +358,7 @@ struct storage_bitmap {
 
     my_type * bitmaps;
 
-    cudaMalloc((void **)&bitmaps, sizeof(my_type)*maximum_sm);
+    hipMalloc((void **)&bitmaps, sizeof(my_type)*maximum_sm);
 
     init_bitmaps<my_type><<<(maximum_sm-1)/512+1, 512>>>(bitmaps, maximum_sm);
 
@@ -367,8 +368,8 @@ struct storage_bitmap {
 
 	static __host__ my_type * generate_buffers_blocks(uint64_t num_blocks){
 
-	cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
+	hipDeviceProp_t prop;
+    hipGetDeviceProperties(&prop, 0);
 
     prop.multiProcessorCount;
 
@@ -376,7 +377,7 @@ struct storage_bitmap {
 
     my_type * bitmaps;
 
-    cudaMalloc((void **)&bitmaps, sizeof(my_type)*maximum_sm);
+    hipMalloc((void **)&bitmaps, sizeof(my_type)*maximum_sm);
 
     init_bitmaps<my_type><<<(maximum_sm-1)/512+1, 512>>>(bitmaps, maximum_sm);
 

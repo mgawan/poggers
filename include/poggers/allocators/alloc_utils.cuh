@@ -2,8 +2,8 @@
 #define POGGERS_ALLOC_UTILS
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -11,7 +11,7 @@
 #include "stdio.h"
 #include "assert.h"
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 namespace cg = cooperative_groups;
 
@@ -76,8 +76,8 @@ __device__ uint get_smid() {
 
 __host__ int get_num_streaming_multiprocessors(int which_device){
 
-	cudaDeviceProp prop;
-    	cudaGetDeviceProperties(&prop, which_device);
+	hipDeviceProp_t prop;
+    	hipGetDeviceProperties(&prop, which_device);
      int mp = prop.multiProcessorCount;
 
      return mp;

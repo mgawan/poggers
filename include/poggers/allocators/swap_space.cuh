@@ -2,8 +2,8 @@
 #define SWAP_SPACE
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -22,7 +22,7 @@
 #include <vector>
 #include <chrono>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 
 namespace cg = cooperative_groups;
@@ -88,18 +88,18 @@ namespace allocators {
 
 			my_type * host_version;
 
-			cudaMallocHost((void **)&host_version, sizeof(my_type));
+			hipHostMalloc((void **)&host_version, sizeof(my_type));
 
 			host_version->dev_memory = dev_allocator;
 			host_allocator->host_memory = host_allocator;
 
 			my_type * dev_version;
 
-			cudaMalloc((void **)&dev_version, sizeof(my_type));
+			hipMalloc((void **)&dev_version, sizeof(my_type));
 
-			cudaMemcpy(dev_version, host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+			hipMemcpy(dev_version, host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
-			cudaFreeHost(host_version);
+			hipHostFree(host_version);
 
 			return dev_version;
 
@@ -109,7 +109,7 @@ namespace allocators {
 		//they are assumed to be their own objects
 		__host__ void free_on_device(my_type * dev_version){
 
-			cudaFree(dev_version);
+			hipFree(dev_version);
 
 		}
 		//convert a raw cuda pointer to a new host pointer, and return the host pointer

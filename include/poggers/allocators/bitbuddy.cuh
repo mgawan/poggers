@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef POGGERS_BITBUDDY
 #define POGGERS_BITBUDDY
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -18,7 +19,7 @@
 #include "assert.h"
 #include <vector>
 
-#include <cooperative_groups.h>
+#include <hip/hip_cooperative_groups.h>
 
 
 namespace cg = cooperative_groups;
@@ -227,9 +228,9 @@ struct bitbuddy_allocator {
 
 			uint64_t * current_level_bitvector;
 
-			cudaMalloc((void ** )&current_level_bitvector, sizeof(uint64_t)*num_items_next_level);
+			hipMalloc((void ** )&current_level_bitvector, sizeof(uint64_t)*num_items_next_level);
 
-			cudaMemset(current_level_bitvector, 0, sizeof(uint64_t)*num_items_next_level);
+			hipMemset(current_level_bitvector, 0, sizeof(uint64_t)*num_items_next_level);
 
 			//this call will init the layer.
 			setup_level<<<(num_items_current_level-1/512+1), 512>>>(current_level_bitvector, num_items_current_level, clean);
@@ -267,9 +268,9 @@ struct bitbuddy_allocator {
 
 		uint64_t ** levels_arr;
 
-		cudaMalloc((void **)&levels_arr, num_levels*sizeof(uint64_t *));
+		hipMalloc((void **)&levels_arr, num_levels*sizeof(uint64_t *));
 
-		cudaMemset(levels_arr, 0, sizeof(uint64_t *)*num_levels);
+		hipMemset(levels_arr, 0, sizeof(uint64_t *)*num_levels);
 
 
 		std::vector<uint64_t * > ext_levels_rev;
@@ -282,7 +283,7 @@ struct bitbuddy_allocator {
 		}
 
 
-		cudaMemcpy(levels_arr, ext_levels_rev.data(), sizeof(uint64_t *)*num_levels, cudaMemcpyHostToDevice);
+		hipMemcpy(levels_arr, ext_levels_rev.data(), sizeof(uint64_t *)*num_levels, hipMemcpyHostToDevice);
 
 		//Todo: clean this up, no need for two counters
 		assert(ext_levels.size() == num_levels);
@@ -291,7 +292,7 @@ struct bitbuddy_allocator {
 
 		bitbuddy_allocator * host_version;
 
-		cudaMallocHost((void **)&host_version, sizeof(bitbuddy_allocator));
+		hipHostMalloc((void **)&host_version, sizeof(bitbuddy_allocator));
 
 		host_version->num_levels = ext_levels.size();
 
@@ -303,11 +304,11 @@ struct bitbuddy_allocator {
 
 		bitbuddy_allocator * dev_version;
 
-		cudaMalloc((void **)&dev_version, sizeof(bitbuddy_allocator));
+		hipMalloc((void **)&dev_version, sizeof(bitbuddy_allocator));
 
-		cudaMemcpy(dev_version, host_version, sizeof(bitbuddy_allocator), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_version, host_version, sizeof(bitbuddy_allocator), hipMemcpyHostToDevice);
 
-		cudaFreeHost(host_version);
+		hipHostFree(host_version);
 
 		return dev_version;
 
@@ -321,26 +322,26 @@ struct bitbuddy_allocator {
 
 		bitbuddy_allocator host_alloc;
 
-		cudaMemcpy(&host_alloc, dev_allocator, sizeof(bitbuddy_allocator), cudaMemcpyDeviceToHost);
+		hipMemcpy(&host_alloc, dev_allocator, sizeof(bitbuddy_allocator), hipMemcpyDeviceToHost);
 
 		uint64_t ** host_array;
 
-		cudaMallocHost((void **)&host_array, sizeof(uint64_t *)*host_alloc.num_levels);
+		hipHostMalloc((void **)&host_array, sizeof(uint64_t *)*host_alloc.num_levels);
 
-		cudaMemcpy(host_array, host_alloc.levels, sizeof(uint64_t *)*host_alloc.num_levels, cudaMemcpyDeviceToHost);
+		hipMemcpy(host_array, host_alloc.levels, sizeof(uint64_t *)*host_alloc.num_levels, hipMemcpyDeviceToHost);
 
 
 		for (int i =0; i < host_alloc.num_levels; i++){
 
-			cudaFree(host_array[i]);
+			hipFree(host_array[i]);
 
 		}
 
-		cudaFree(host_alloc.levels);
+		hipFree(host_alloc.levels);
 
-		cudaFree(dev_allocator);
+		hipFree(dev_allocator);
 
-		cudaFreeHost(host_array);
+		hipHostFree(host_array);
 
 
 	}

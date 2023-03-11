@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef ALIGNED_HEAP_STACK
 #define ALIGNED_HEAP_STACK
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/representations/representation_helpers.cuh>
@@ -159,7 +160,7 @@ struct aligned_heap_ptr {
 
 			stack_init_kernel<my_type><<<(max_calls -1)/512+1, 512>>>(superblock_as_uint, bytes_in_use, bytes_per_item);
 
-			cudaDeviceSynchronize();
+			hipDeviceSynchronize();
 
 			__threadfence();
 

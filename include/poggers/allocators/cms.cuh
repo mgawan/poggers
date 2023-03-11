@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef CMS
 #define CMS
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 
 #include <poggers/allocators/free_list.cuh>
 #include <poggers/allocators/aligned_stack.cuh>
@@ -51,13 +52,13 @@
 
 
 //CMS: The CUDA Memory Shibboleth
-//CMS is a drop-in replacement for cudaMalloc and CudaFree.
+//CMS is a drop-in replacement for hipMalloc and CudaFree.
 //Before your kernels start, initialize a handler with
 //shibboleth * manager = poggers::allocators::shibboleth::init() or init_managed() for host-device unified memory.
 // The amount of memory specified at construction is all that's available to the manager,
 // so you can spin up multiple managers for different tasks or request all available memory!
-// The memory returned is built off of cudaMalloc or cudaMallocManaged, so regular cuda API calls are fine.
-// Unlike the cuda device API, however, you can safely cudaMemcpy to and from memory requested by threads!
+// The memory returned is built off of hipMalloc or hipMallocManaged, so regular cuda API calls are fine.
+// Unlike the cuda device API, however, you can safely hipMemcpy to and from memory requested by threads!
 
 
 
@@ -122,15 +123,15 @@ __host__ allocator * host_allocate_sub_allocator(header * heap){
 
    allocator ** stack_ptr;
 
-   cudaMallocManaged((void **)&stack_ptr, sizeof(allocator *));
+   hipMallocManaged((void **)&stack_ptr, sizeof(allocator *));
 
    allocate_sub_allocator<allocator><<<1,1>>>(stack_ptr, heap);
 
-   cudaDeviceSynchronize();
+   hipDeviceSynchronize();
 
    allocator * to_return = stack_ptr[0];
 
-   cudaFree(stack_ptr);
+   hipFree(stack_ptr);
 
    return to_return;
 
@@ -159,15 +160,15 @@ __host__ void * host_malloc_wrapper(cms * shibboleth, uint64_t num_bytes){
 
    void ** stack_ptr;
 
-   cudaMallocManaged((void **)&stack_ptr, sizeof(void *));
+   hipMallocManaged((void **)&stack_ptr, sizeof(void *));
 
    host_malloc_kernel<cms><<<1,1>>>(stack_ptr, shibboleth, num_bytes);
 
-   cudaDeviceSynchronize();
+   hipDeviceSynchronize();
 
    void * to_return = stack_ptr[0];
 
-   cudaFree(stack_ptr);
+   hipFree(stack_ptr);
 
    return to_return;
 
@@ -267,9 +268,9 @@ struct shibboleth {
 			abort();
 		}
 
-		cudaMemcpy(dev_cms, host_cms, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_cms, host_cms, sizeof(my_type), hipMemcpyHostToDevice);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		free(host_cms);
 
@@ -301,9 +302,9 @@ struct shibboleth {
 
 		my_type * host_cms = (my_type * ) malloc(sizeof(my_type));
 
-		cudaMemcpy(host_cms, dev_cms, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_cms, dev_cms, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
 		hash_table::free_on_device(host_cms->free_table);
 

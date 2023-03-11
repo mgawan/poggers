@@ -1,9 +1,10 @@
+#include "hip/hip_runtime.h"
 #ifndef POGGERS_BUDDY_ALLOCATOR
 #define POGGERS_BUDDY_ALLOCATOR
 
 
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <hip/hip_runtime.h>
+#include <hip/hip_runtime_api.h>
 #include <variant>
 
 #include <stdio.h>
@@ -385,7 +386,7 @@ struct buddy_allocator {
 
 	// 	void * ext_memory;
 
-	// 	cudaMalloc((void **)&ext_memory, num_bytes);
+	// 	hipMalloc((void **)&ext_memory, num_bytes);
 
 	// 	//TODO: memory safety check here
 
@@ -412,7 +413,7 @@ struct buddy_allocator {
 
 		void * ext_mem;
 
-		cudaMalloc((void ** )&ext_mem, num_bytes);
+		hipMalloc((void ** )&ext_mem, num_bytes);
 
 		return generate_on_device(ext_mem, num_bytes);
 
@@ -424,7 +425,7 @@ struct buddy_allocator {
 
 		void * ext_mem;
 
-		cudaMallocManaged((void ** )&ext_mem, num_bytes);
+		hipMallocManaged((void ** )&ext_mem, num_bytes);
 
 		return generate_on_device(ext_mem, num_bytes);
 
@@ -439,7 +440,7 @@ struct buddy_allocator {
 
 		my_type * host_version;
 
-		cudaMallocHost((void **)&host_version, sizeof(my_type));
+		hipHostMalloc((void **)&host_version, sizeof(my_type));
 
 		host_version->memory = ext_memory;
 
@@ -489,23 +490,23 @@ struct buddy_allocator {
 
 		buddy_node * items;
 
-		cudaMalloc((void **)& items, sizeof(buddy_node)*num_items_to_allocate);
+		hipMalloc((void **)& items, sizeof(buddy_node)*num_items_to_allocate);
 
 		host_version->available_list = items;
 
 
 		my_type * dev_version;
 
-		cudaMalloc((void **)&dev_version, sizeof(my_type));
+		hipMalloc((void **)&dev_version, sizeof(my_type));
 
-		cudaMemcpy(dev_version, host_version, sizeof(my_type), cudaMemcpyHostToDevice);
+		hipMemcpy(dev_version, host_version, sizeof(my_type), hipMemcpyHostToDevice);
 
 		//Num items to allocate is the # of threads that should be launched
 		init_memory_pointers<<<(num_items_to_allocate -1)/ 1024 + 1, 1024>>>(dev_version);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFreeHost(host_version);
+		hipHostFree(host_version);
 
 		return dev_version;
 
@@ -521,17 +522,17 @@ struct buddy_allocator {
 
 		my_type * host_version;
 
-		cudaMallocHost((void **)&host_version, sizeof(my_type));
+		hipHostMalloc((void **)&host_version, sizeof(my_type));
 
-		cudaMemcpy(host_version, dev_version, sizeof(my_type), cudaMemcpyDeviceToHost);
+		hipMemcpy(host_version, dev_version, sizeof(my_type), hipMemcpyDeviceToHost);
 
-		cudaDeviceSynchronize();
+		hipDeviceSynchronize();
 
-		cudaFree(dev_version);
-		cudaFree(host_version->memory);
-		cudaFree(host_version->available_list);
+		hipFree(dev_version);
+		hipFree(host_version->memory);
+		hipFree(host_version->available_list);
 
-		cudaFreeHost(host_version);
+		hipHostFree(host_version);
 
 	}
 
