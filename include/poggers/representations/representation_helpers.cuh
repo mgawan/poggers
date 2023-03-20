@@ -82,11 +82,23 @@ __device__ __inline__ bool typed_atomic_write(T * backing, T item, T replace){
 }
 
 
+// template<>
+// __device__ __inline__ bool typed_atomic_write<uint16_t>(uint16_t * backing, uint16_t item, uint16_t replace){
+
+
+// 	return (atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace) == item);
+
+// }
+
 template<>
 __device__ __inline__ bool typed_atomic_write<uint16_t>(uint16_t * backing, uint16_t item, uint16_t replace){
 
 
-	return (atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace) == item);
+	// return (atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace) == item);
+
+	assert(1==0);
+
+	return 0;
 
 }
 
@@ -152,15 +164,23 @@ __device__ __inline__ T typed_atomic_CAS(T * backing, T item, T replace){
 }
 
 
+// template<>
+// __device__ __inline__ uint16_t typed_atomic_CAS<uint16_t>(uint16_t * backing, uint16_t item, uint16_t replace){
+
+// 	uint16_t result = atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace);
+
+// 	return result;
+
+// }
+
 template<>
 __device__ __inline__ uint16_t typed_atomic_CAS<uint16_t>(uint16_t * backing, uint16_t item, uint16_t replace){
 
-	uint16_t result = atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace);
-
-	return result;
+	//uint16_t result = atomicCAS((unsigned short int *) backing, (unsigned short int) item, (unsigned short int) replace);
+	assert(1==0);
+	return 0;
 
 }
-
 
 template<>
 __device__ __inline__ uint32_t typed_atomic_CAS<uint32_t>(uint32_t * backing, uint32_t item, uint32_t replace){

@@ -75,6 +75,8 @@
 
 #include <poggers/representations/grouped_storage_sub_bits.cuh>
 
+// #include <hipex/hipex.hpp>
+
 #include <stdio.h>
 #include <iostream>
 #include <chrono>
@@ -106,13 +108,13 @@
 using backing_table = poggers::tables::bucketed_table<
     uint64_t, uint8_t,
     poggers::representations::dynamic_bucket_container<poggers::representations::dynamic_container<
-        poggers::representations::bit_grouped_container<10, 6>::representation, uint16_t>::representation>::representation,
+        poggers::representations::bit_grouped_container<26, 6>::representation, uint32_t>::representation>::representation,
     1, 8, poggers::insert_schemes::linear_insert_bucket_scheme, 20, poggers::probing_schemes::doubleHasher,
     poggers::hashers::murmurHasher>;
 using TCF = poggers::tables::bucketed_table<
     uint64_t, uint8_t,
     poggers::representations::dynamic_bucket_container<poggers::representations::dynamic_container<
-        poggers::representations::bit_grouped_container<10, 6>::representation, uint16_t>::representation>::representation,
+        poggers::representations::bit_grouped_container<26, 6>::representation, uint32_t>::representation>::representation,
     1, 8, poggers::insert_schemes::power_of_n_insert_shortcut_bucket_scheme, 2, poggers::probing_schemes::doubleHasher,
     poggers::hashers::murmurHasher, true, backing_table>;
 
@@ -269,7 +271,7 @@ __global__ void find_first_fill(Filter * filter, Key * keys, Val * vals, uint64_
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);//tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
 
    if (tid != 0) return;
 
@@ -321,7 +323,7 @@ __global__ void speed_insert_kernel(Filter * filter, Key * keys, Val * vals, uin
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -350,7 +352,7 @@ __global__ void debug_insert_kernel(Filter * filter, Key * keys, Val * vals, uin
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -385,7 +387,7 @@ __global__ void debug_query_kernel(Filter * filter, Key * keys, Val * vals, uint
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -421,7 +423,7 @@ __global__ void speed_remove_kernel(Filter * filter, Key * keys, uint64_t nvals,
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -459,7 +461,7 @@ __global__ void speed_query_kernel(Filter * filter, Key * keys, Val * vals, uint
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -493,7 +495,7 @@ __global__ void fp_speed_query_kernel(Filter * filter, Key * keys, Val * vals, u
 
    auto tile = filter->get_my_tile();
 
-   uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+   uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_rank(tile);
 
    if (tid >= nvals) return;
 
@@ -634,7 +636,7 @@ __host__ void test_tcf_speed(const std::string& filename, int num_bits, int num_
       auto insert_start = std::chrono::high_resolution_clock::now();
 
       //add function for configure parameters - should be called by ht and return dim3
-      speed_insert_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(items_in_this_batch),test_filter->get_block_size(items_in_this_batch)>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, misses);
+      HIP_KERNEL_NAME(speed_insert_kernel<Filter, Key, Val>)<<<dim3(test_filter->get_num_blocks(items_in_this_batch)),dim3(test_filter->get_block_size(items_in_this_batch)),0,0>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, misses);
       //debug_insert_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(items_in_this_batch),test_filter->get_block_size(items_in_this_batch)>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, misses, missed);
       
       hipDeviceSynchronize();
@@ -650,7 +652,7 @@ __host__ void test_tcf_speed(const std::string& filename, int num_bits, int num_
 
       auto query_start = std::chrono::high_resolution_clock::now();
 
-      speed_query_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(items_in_this_batch),test_filter->get_block_size(items_in_this_batch)>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, &misses[1], &misses[2]);
+      HIP_KERNEL_NAME(speed_query_kernel<Filter, Key, Val>)<<<dim3(test_filter->get_num_blocks(items_in_this_batch)),dim3(test_filter->get_block_size(items_in_this_batch)),0,0>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, &misses[1], &misses[2]);
       //debug_query_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(items_in_this_batch),test_filter->get_block_size(items_in_this_batch)>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, &misses[1], &misses[2], missed);
       
       hipDeviceSynchronize();
@@ -668,7 +670,7 @@ __host__ void test_tcf_speed(const std::string& filename, int num_bits, int num_
 
       auto fp_start = std::chrono::high_resolution_clock::now();
 
-      speed_query_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(items_in_this_batch),test_filter->get_block_size(items_in_this_batch)>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, &misses[3], &misses[4]);
+      HIP_KERNEL_NAME(speed_query_kernel<Filter, Key, Val>)<<<dim3(test_filter->get_num_blocks(items_in_this_batch)),dim3(test_filter->get_block_size(items_in_this_batch)),0,0>>>(test_filter, dev_keys, dev_vals, items_in_this_batch, &misses[3], &misses[4]);
 
 
       hipDeviceSynchronize();
@@ -846,7 +848,7 @@ __host__ void tcf_find_first_fill(uint64_t num_bits){
 
    hipDeviceSynchronize();
 
-   find_first_fill<Filter, Key, Val><<<1, 32>>>(test_filter, dev_keys, dev_vals, nitems, returned_nitems);
+   HIP_KERNEL_NAME(find_first_fill<Filter, Key, Val>)<<<dim3(1), dim3(32), 0, 0>>>(test_filter, dev_keys, dev_vals, nitems, returned_nitems);
 
    hipDeviceSynchronize();
 
@@ -859,7 +861,7 @@ __host__ void tcf_find_first_fill(uint64_t num_bits){
 
    uint64_t new_nitems = returned_nitems[0];
 
-   speed_query_kernel<Filter, Key, Val><<<test_filter->get_num_blocks(new_nitems), test_filter->get_block_size(new_nitems)>>>(test_filter, dev_keys, dev_vals, new_nitems, &misses[0], &misses[1]);
+   HIP_KERNEL_NAME(speed_query_kernel<Filter, Key, Val>)<<<dim3(test_filter->get_num_blocks(new_nitems)), dim3(test_filter->get_block_size(new_nitems)), 0,0 >>>(test_filter, dev_keys, dev_vals, new_nitems, &misses[0], &misses[1]);
 
    hipDeviceSynchronize();
 

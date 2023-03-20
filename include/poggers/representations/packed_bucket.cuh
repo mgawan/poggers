@@ -7,6 +7,7 @@
 #include <variant>
 
 #include <poggers/representations/representation_helpers.cuh>
+#include <hipex/hipex.hpp>
 
 
 // struct __attribute__ ((__packed__)) val_storage {
@@ -56,7 +57,7 @@ struct  bucketed_internal_dynamic_container {
 
 				bool filled = !(storage[i].is_empty() || storage[i].contains_tombstone());
 
-				fill += __popc(insert_tile.ballot(filled));
+				fill += __popc(hipex::ballot(insert_tile, filled));//insert_tile.ballot(filled)
 
 			}
 
@@ -78,7 +79,7 @@ struct  bucketed_internal_dynamic_container {
 					ballot = true;
 				}
 
-				auto ballot_result = insert_tile.ballot(ballot);
+				auto ballot_result = hipex::ballot(insert_tile,ballot);//insert_tile.ballot(ballot);
 
 				while (ballot_result){
 
@@ -103,7 +104,7 @@ struct  bucketed_internal_dynamic_container {
 						// }
 					}
 
-					if (insert_tile.ballot(ballot)) return true;
+					if (hipex::ballot(insert_tile, ballot)) return true;
 
 					ballot_result ^= 1UL << leader;
 
@@ -130,7 +131,7 @@ struct  bucketed_internal_dynamic_container {
 					ballot = true;
 				}
 
-				auto ballot_result = insert_tile.ballot(ballot);
+				auto ballot_result = hipex::ballot(insert_tile,ballot);//insert_tile.ballot(ballot);
 
 				while (ballot_result){
 
@@ -165,7 +166,7 @@ struct  bucketed_internal_dynamic_container {
 						// }
 					}
 
-					if (insert_tile.ballot(ballot)) return true;
+					if (hipex::ballot(insert_tile,ballot)) return true;
 
 					ballot_result ^= 1UL << leader;
 
@@ -199,7 +200,7 @@ struct  bucketed_internal_dynamic_container {
 					ext_val = storage[i].get_val(ext_key);
 				}
 
-				auto ballot_result = insert_tile.ballot(ballot);
+				auto ballot_result = hipex::ballot(insert_tile, ballot);//insert_tile.ballot(ballot)
 
 				if (ballot_result){
 					ext_val = insert_tile.shfl(ext_val, __ffs(ballot_result)-1);
@@ -231,7 +232,7 @@ struct  bucketed_internal_dynamic_container {
 					//ext_val = vals[i];
 				}
 
-				auto ballot_result = insert_tile.ballot(ballot);
+				auto ballot_result = hipex::ballot(insert_tile, ballot);//insert_tile.ballot(ballot);
 
 				while (ballot_result){
 
@@ -247,7 +248,7 @@ struct  bucketed_internal_dynamic_container {
 						//ballot = typed_atomic_write(&keys[i], ext_key, get_tombstone());
 					}
 
-					if (insert_tile.ballot(ballot)) return true;
+					if (hipex::ballot(insert_tile, ballot)) return true;//insert_tile.ballot(ballot)
 
 					ballot_result ^= 1UL << leader;
 
