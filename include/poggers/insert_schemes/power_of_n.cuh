@@ -190,11 +190,11 @@ public:
 		__device__ __inline__ bool query_into_bucket(cg::thread_block_tile<Partition_Size> insert_tile, Key key, Val & ext_val, uint64_t insert_slot){
 
 
-			//if (insert_tile.thread_rank() == 0) printf("In query!\n");
+			//if (insert_tile.thread_rank() == 0) printf("In query from query into bucket!\n");
 
        		insert_slot = insert_slot*Bucket_Size;// + insert_tile.thread_rank();
 
-       		//printf("checking_for_slot\n");
+       		//if (insert_tile.thread_rank() == 0) printf("checking_for_slot\n");
 
        		for (int i = insert_tile.thread_rank(); i < Bucket_Size; i+= Partition_Size){
 
@@ -423,7 +423,7 @@ public:
 
 		//first step is to init probing scheme
 
-		//if (insert_tile.thread_rank() == 0) printf("Starting outer query!\n");
+		//  if (insert_tile.thread_rank() == 0) printf("Starting outer query!*****\n");
 
 
 		probing_scheme_type insert_probing_scheme(seed);
@@ -432,9 +432,6 @@ public:
 
        			
        		insert_slot = insert_slot % num_buckets;
-
-
-       		
 
 			if (query_into_bucket(insert_tile, key, ext_val, insert_slot)){
 
@@ -456,7 +453,7 @@ public:
 
 		//first step is to init probing scheme
 
-		//if (insert_tile.thread_rank() == 0) printf("Starting outer query!\n");
+		// if (insert_tile.thread_rank() == 0) printf("Starting outer query!\n");
 
 
 		probing_scheme_type insert_probing_scheme(seed);

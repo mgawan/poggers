@@ -355,7 +355,7 @@ public:
 
 		//first step is to init probing scheme
 
-		//if (insert_tile.thread_rank() == 0) printf("Starting outer query!\n");
+		// if (insert_tile.thread_rank() == 0) printf("Starting outer query in linear_insert_buckets!\n");
 
 
 		probing_scheme_type insert_probing_scheme(seed);
@@ -370,7 +370,7 @@ public:
 
 			if (query_into_bucket(insert_tile, key, ext_val, insert_slot)){
 
-				//if (insert_tile.thread_rank() == 0) printf("Found in %llu!\n", insert_slot);
+				// if (insert_tile.thread_rank() == 0) printf("Found in %llu!\n", insert_slot);
 				return true;
 			}
      	

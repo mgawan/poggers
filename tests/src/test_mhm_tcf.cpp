@@ -338,6 +338,7 @@ __global__ void speed_insert_kernel(Filter * filter, Key * keys, Val * vals, uin
 
       Val test_val = 0;
       assert(filter->query(tile, keys[tid], test_val));
+      // filter->query(tile, keys[tid], test_val);
 
       //assert(test_val == vals[tid]);
    }

@@ -316,7 +316,7 @@ public:
 
 		//first step is to init probing scheme
 
-		//if (insert_tile.thread_rank() == 0) printf("Starting outer query!\n");
+		// if (insert_tile.thread_rank() == 0) printf("Starting outer query from grouped_power!\n");
 
 
 		probing_scheme_type insert_probing_scheme(seed);

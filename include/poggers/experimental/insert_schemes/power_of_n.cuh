@@ -330,7 +330,7 @@ public:
 		//first step is to init probing scheme
 
 
-
+		// printf("query from opower of n /%");
 		probing_scheme_type insert_probing_scheme(seed);
 
 		for (uint64_t insert_slot = insert_probing_scheme.begin(key); insert_slot != insert_probing_scheme.end(); insert_slot = insert_probing_scheme.next()){

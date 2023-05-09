@@ -354,7 +354,7 @@ __device__ storage_type sub_byte_contains(storage_type * address_to_swap, int in
 		//if these two don't match our assumptions are super weird
 		assert(num_bits + offset - leftover_bits == size_of_storage_bits);
 
-		const storage_type KEY_MASK_SET_BITS = (1ULL << num_bits-leftover_bits)-1;
+		const storage_type KEY_MASK_SET_BITS = (1ULL << (num_bits-leftover_bits))-1;
 		const storage_type KEY_MASK = (KEY_MASK_SET_BITS << offset);
 
 		//front section is the lower order bits - this all seems like good business to me

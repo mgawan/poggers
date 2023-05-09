@@ -296,7 +296,7 @@ public:
 
 		//first step is to init probing scheme
 
-
+		// printf("query from bucket insert\n");
 
 		probing_scheme_type insert_probing_scheme(seed);
 

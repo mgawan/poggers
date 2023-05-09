@@ -583,7 +583,7 @@ __global__ void team_pinned_alloc_kernels(smid_pinned_container<num_blocks> * bi
 
    while (allocs_claimed < allocs_per_thread){
 
-      auto team = cg::coalesced_threads();
+      cg::coalesced_group team = cg::coalesced_threads();
 
       //printf("Starting round %d\n", allocs_claimed);
 
