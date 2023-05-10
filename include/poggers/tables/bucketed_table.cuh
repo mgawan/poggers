@@ -10,7 +10,7 @@
 #include <stdexcept>
 
 #include <hip/hip_cooperative_groups.h>
-
+// #include <hipex/hipex.hpp>
 #include <poggers/tables/recursive_end_table.cuh>
 
 //#include <poggers/hash_schemes/murmurhash.cuh>
@@ -40,7 +40,7 @@ __global__ void count_fill_kernel(Table * my_table, uint64_t num_buckets, uint64
 
 	auto tile = my_table->get_my_tile();
 
-  	uint64_t tid = tile.meta_group_size()*blockIdx.x + tile.meta_group_rank();
+  	uint64_t tid = hipex::meta_group_size(tile)*blockIdx.x + hipex::meta_group_size(tile);
 
   	if (tid >= num_buckets) return;
 
